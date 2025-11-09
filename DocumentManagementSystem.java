@@ -4,9 +4,7 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.image.BufferedImage;
-import javax.swing.ImageIcon;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
+import javax.imageio.ImageIO;
 
 
 public class DocumentManagementSystem extends JFrame {
@@ -180,24 +178,109 @@ public class DocumentManagementSystem extends JFrame {
             File documentFile = new File(documentsFolder, fileName);
             File metadataFile = new File(documentsFolder, fileName + ".meta");
             if (documentFile.exists() && metadataFile.exists()) {
-                // PDF viewing functionality starts here
-                if (fileName.toLowerCase().endsWith(".pdf")) {
-                    try {
-                        PDDocument document = PDDocument.load(documentFile);
-                        PDFRenderer renderer = new PDFRenderer(document);
-                        BufferedImage image = renderer.renderImageWithDPI(0, 300); // Render first page
-                        ImageIcon icon = new ImageIcon(image);
-                        JLabel label = new JLabel(icon);
-                        JScrollPane scrollPane = new JScrollPane(label);
+                String lowerFileName = fileName.toLowerCase();
 
-                        JDialog viewDialog = new JDialog(this, "View Document", true);
-                        viewDialog.setSize(900, 700);
-                        viewDialog.add(scrollPane);
+                // Image viewing functionality (PNG, JPG, JPEG, GIF, BMP)
+                if (lowerFileName.endsWith(".png") || lowerFileName.endsWith(".jpg") ||
+                    lowerFileName.endsWith(".jpeg") || lowerFileName.endsWith(".gif") ||
+                    lowerFileName.endsWith(".bmp")) {
+                    try {
+                        BufferedImage image = ImageIO.read(documentFile);
+                        if (image != null) {
+                            ImageIcon icon = new ImageIcon(image);
+                            JLabel label = new JLabel(icon);
+                            JScrollPane scrollPane = new JScrollPane(label);
+                            scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+                            scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+
+                            Map<String, String> metadata = readMetadata(metadataFile);
+                            String[] columnNames = {"Property", "Value"};
+                            String[][] data = {
+                                    {"Document", metadata.get("filename")},
+                                    {"Category", category},
+                                    {"Topic", metadata.get("topic")},
+                                    {"Tags", tags}
+                            };
+
+                            JTable metadataTable = new JTable(new DefaultTableModel(data, columnNames) {
+                                @Override
+                                public boolean isCellEditable(int row, int column) {
+                                    return false;
+                                }
+                            });
+                            metadataTable.setFont(new Font("Arial", Font.PLAIN, 14));
+                            metadataTable.setRowHeight(24);
+                            JScrollPane metadataScrollPane = new JScrollPane(metadataTable);
+                            metadataScrollPane.setPreferredSize(new Dimension(850, 120));
+
+                            JPanel viewPanel = new JPanel(new BorderLayout(10, 10));
+                            viewPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                            viewPanel.add(metadataScrollPane, BorderLayout.NORTH);
+                            viewPanel.add(scrollPane, BorderLayout.CENTER);
+
+                            JDialog viewDialog = new JDialog(this, "View Image - " + fileName, true);
+                            viewDialog.setSize(900, 700);
+                            viewDialog.add(viewPanel);
+                            viewDialog.setLocationRelativeTo(this);
+                            viewDialog.setVisible(true);
+                        } else {
+                            showErrorMessage("Unable to load image file.");
+                        }
+                    } catch (IOException e) {
+                        showErrorMessage("Error opening image: " + e.getMessage());
+                    }
+                }
+                // PDF viewing - requires external viewer
+                else if (lowerFileName.endsWith(".pdf")) {
+                    try {
+                        Map<String, String> metadata = readMetadata(metadataFile);
+                        String[] columnNames = {"Property", "Value"};
+                        String[][] data = {
+                                {"Document", metadata.get("filename")},
+                                {"Category", category},
+                                {"Topic", metadata.get("topic")},
+                                {"Tags", tags}
+                        };
+
+                        JTable metadataTable = new JTable(new DefaultTableModel(data, columnNames) {
+                            @Override
+                            public boolean isCellEditable(int row, int column) {
+                                return false;
+                            }
+                        });
+                        metadataTable.setFont(new Font("Arial", Font.PLAIN, 14));
+                        metadataTable.setRowHeight(24);
+                        JScrollPane metadataScrollPane = new JScrollPane(metadataTable);
+
+                        JButton openButton = new JButton("Open PDF in External Viewer");
+                        openButton.setFont(new Font("Arial", Font.BOLD, 14));
+                        openButton.addActionListener(e -> {
+                            try {
+                                if (Desktop.isDesktopSupported()) {
+                                    Desktop.getDesktop().open(documentFile);
+                                } else {
+                                    showErrorMessage("Desktop operations not supported on this system.");
+                                }
+                            } catch (IOException ex) {
+                                showErrorMessage("Error opening PDF: " + ex.getMessage());
+                            }
+                        });
+
+                        JPanel pdfPanel = new JPanel(new BorderLayout(10, 10));
+                        pdfPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                        pdfPanel.add(metadataScrollPane, BorderLayout.NORTH);
+
+                        JPanel centerPanel = new JPanel(new GridBagLayout());
+                        centerPanel.add(openButton);
+                        pdfPanel.add(centerPanel, BorderLayout.CENTER);
+
+                        JDialog viewDialog = new JDialog(this, "View PDF - " + fileName, true);
+                        viewDialog.setSize(600, 400);
+                        viewDialog.add(pdfPanel);
                         viewDialog.setLocationRelativeTo(this);
                         viewDialog.setVisible(true);
-                        document.close();
-                    } catch (IOException e) {
-                        showErrorMessage("Error opening PDF: " + e.getMessage());
+                    } catch (Exception e) {
+                        showErrorMessage("Error viewing PDF metadata: " + e.getMessage());
                     }
                 } else {
                     // Existing functionality for other file types

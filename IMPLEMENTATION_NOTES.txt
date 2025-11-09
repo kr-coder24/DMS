@@ -1,0 +1,72 @@
+==========================================
+PDF AND PNG VIEWING IMPLEMENTATION NOTES
+==========================================
+
+FILES CHANGED:
+--------------
+1. DocumentManagementSystem.java - Main changes to support PDF and PNG viewing
+
+CHANGES MADE:
+-------------
+
+1. REMOVED Apache PDFBox Dependencies:
+   - Removed: import org.apache.pdfbox.pdmodel.PDDocument;
+   - Removed: import org.apache.pdfbox.rendering.PDFRenderer;
+   - Removed: import javax.swing.ImageIcon; (duplicate)
+
+   Added: import javax.imageio.ImageIO;
+
+2. ADDED PNG/Image Viewing Support:
+   - Supports: PNG, JPG, JPEG, GIF, BMP files
+   - Uses Java's built-in ImageIO library (no external dependencies needed)
+   - Displays images in a scrollable dialog with metadata table
+   - Shows full image with smooth scrolling
+
+3. CHANGED PDF Viewing Approach:
+   - Instead of trying to render PDF in Java (requires PDFBox library)
+   - Now opens PDFs in the system's default PDF viewer
+   - Uses Desktop.getDesktop().open() method
+   - Shows metadata in dialog with "Open PDF in External Viewer" button
+
+HOW TO USE:
+-----------
+
+1. Compile the project:
+   javac *.java
+
+2. Run the application:
+   java LoginFrame
+
+3. Upload PNG or PDF files:
+   - Click "Upload" button
+   - Select a PNG, JPG, or PDF file
+   - Enter metadata (category, topic, tags)
+
+4. View files:
+   - Select a file from the list
+   - Click "View" button
+   - For PNG/images: Image displays directly in the application
+   - For PDFs: Click "Open PDF in External Viewer" button
+
+SUPPORTED IMAGE FORMATS:
+------------------------
+- PNG (.png)
+- JPEG (.jpg, .jpeg)
+- GIF (.gif)
+- BMP (.bmp)
+
+WHY THIS APPROACH:
+------------------
+1. Apache PDFBox requires external JAR files that weren't in your project
+2. Using system PDF viewer is simpler and more reliable
+3. ImageIO is built into Java - no dependencies needed
+4. This solution works out-of-the-box without additional setup
+
+WHAT YOU NEED TO DO:
+--------------------
+1. Recompile: javac *.java
+2. Run: java LoginFrame
+3. Upload some PNG or PDF files to test
+4. Click View to see them
+
+NO ADDITIONAL LIBRARIES NEEDED - Everything now uses Java standard library!
