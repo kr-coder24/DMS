@@ -3,6 +3,11 @@ import java.io.*;
 import java.util.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.image.BufferedImage;
+import javax.swing.ImageIcon;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+
 
 public class DocumentManagementSystem extends JFrame {
     private JButton uploadButton, deleteButton, viewButton, editButton;
@@ -175,49 +180,71 @@ public class DocumentManagementSystem extends JFrame {
             File documentFile = new File(documentsFolder, fileName);
             File metadataFile = new File(documentsFolder, fileName + ".meta");
             if (documentFile.exists() && metadataFile.exists()) {
-                Map<String, String> metadata = readMetadata(metadataFile);
-                String content = readFileContent(documentFile);
+                // PDF viewing functionality starts here
+                if (fileName.toLowerCase().endsWith(".pdf")) {
+                    try {
+                        PDDocument document = PDDocument.load(documentFile);
+                        PDFRenderer renderer = new PDFRenderer(document);
+                        BufferedImage image = renderer.renderImageWithDPI(0, 300); // Render first page
+                        ImageIcon icon = new ImageIcon(image);
+                        JLabel label = new JLabel(icon);
+                        JScrollPane scrollPane = new JScrollPane(label);
 
-                // Create the metadata table
-                String[] columnNames = {"Property", "Value"};
-                String[][] data = {
-                        {"Document", metadata.get("filename")},
-                        {"Category", category},
-                        {"Topic", metadata.get("topic")},
-                        {"Tags", tags}
-                };
-
-                JTable metadataTable = new JTable(new DefaultTableModel(data, columnNames) {
-                    @Override
-                    public boolean isCellEditable(int row, int column) {
-                        return false;
+                        JDialog viewDialog = new JDialog(this, "View Document", true);
+                        viewDialog.setSize(900, 700);
+                        viewDialog.add(scrollPane);
+                        viewDialog.setLocationRelativeTo(this);
+                        viewDialog.setVisible(true);
+                        document.close();
+                    } catch (IOException e) {
+                        showErrorMessage("Error opening PDF: " + e.getMessage());
                     }
-                });
-                metadataTable.setFont(new Font("Arial", Font.PLAIN, 14));
-                metadataTable.setRowHeight(24);
-                metadataTable.setPreferredScrollableViewportSize(new Dimension(750, 100));
-                JScrollPane metadataScrollPane = new JScrollPane(metadataTable);
+                } else {
+                    // Existing functionality for other file types
+                    Map<String, String> metadata = readMetadata(metadataFile);
+                    String content = readFileContent(documentFile);
 
-                // Create the document content text area
-                JTextArea textArea = new JTextArea(content);
-                textArea.setEditable(false);
-                textArea.setFont(new Font("Arial", Font.PLAIN, 14));
-                textArea.setLineWrap(true);
-                textArea.setWrapStyleWord(true);
-                JScrollPane contentScrollPane = new JScrollPane(textArea);
+                    // Create the metadata table
+                    String[] columnNames = {"Property", "Value"};
+                    String[][] data = {
+                            {"Document", metadata.get("filename")},
+                            {"Category", category},
+                            {"Topic", metadata.get("topic")},
+                            {"Tags", tags}
+                    };
 
-                // Create the main panel and add components
-                JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-                mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-                mainPanel.add(metadataScrollPane, BorderLayout.NORTH);
-                mainPanel.add(contentScrollPane, BorderLayout.CENTER);
+                    JTable metadataTable = new JTable(new DefaultTableModel(data, columnNames) {
+                        @Override
+                        public boolean isCellEditable(int row, int column) {
+                            return false;
+                        }
+                    });
+                    metadataTable.setFont(new Font("Arial", Font.PLAIN, 14));
+                    metadataTable.setRowHeight(24);
+                    metadataTable.setPreferredScrollableViewportSize(new Dimension(750, 100));
+                    JScrollPane metadataScrollPane = new JScrollPane(metadataTable);
 
-                // Create and show the dialog
-                JDialog viewDialog = new JDialog(this, "View Document", true);
-                viewDialog.setSize(900, 700);
-                viewDialog.add(mainPanel);
-                viewDialog.setLocationRelativeTo(this);
-                viewDialog.setVisible(true);
+                    // Create the document content text area
+                    JTextArea textArea = new JTextArea(content);
+                    textArea.setEditable(false);
+                    textArea.setFont(new Font("Arial", Font.PLAIN, 14));
+                    textArea.setLineWrap(true);
+                    textArea.setWrapStyleWord(true);
+                    JScrollPane contentScrollPane = new JScrollPane(textArea);
+
+                    // Create the main panel and add components
+                    JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+                    mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                    mainPanel.add(metadataScrollPane, BorderLayout.NORTH);
+                    mainPanel.add(contentScrollPane, BorderLayout.CENTER);
+
+                    // Create and show the dialog
+                    JDialog viewDialog = new JDialog(this, "View Document", true);
+                    viewDialog.setSize(900, 700);
+                    viewDialog.add(mainPanel);
+                    viewDialog.setLocationRelativeTo(this);
+                    viewDialog.setVisible(true);
+                }
             } else {
                 showErrorMessage("Document or metadata file not found.");
             }
